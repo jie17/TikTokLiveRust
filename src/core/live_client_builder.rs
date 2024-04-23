@@ -12,33 +12,29 @@ use crate::data::create_default_settings;
 use crate::data::live_common::{TikTokLiveInfo, TikTokLiveSettings};
 use crate::generated::events::TikTokLiveEvent;
 use crate::http::http_request_builder::HttpRequestFactory;
+use tokio::sync::mpsc;
 
-
-
-pub struct TikTokLiveBuilder
-{
+pub struct TikTokLiveBuilder {
     settings: TikTokLiveSettings,
     pub(crate) event_observer: TikTokLiveEventObserver,
+    event_sender: mpsc::Sender<TikTokLiveEvent>,
 }
 
-impl TikTokLiveBuilder
-{
+impl TikTokLiveBuilder {
     ///
     ///  # Create new tiktok live builder
     ///
     ///  ### user_name - name of tiktok user that can be found in the live link
     ///
-    pub fn new(user_name: &str) -> Self
-    {
-        let env = Env::default()
-            .filter_or("MY_LOG_LEVEL", "info");
+    pub fn new(user_name: &str, event_sender: mpsc::Sender<TikTokLiveEvent>) -> Self {
+        let env = Env::default().filter_or("MY_LOG_LEVEL", "info");
         Builder::from_env(env)
             .filter_module("my_crate::module", LevelFilter::Debug)
             .init();
-        Self
-        {
+        Self {
             settings: create_default_settings(user_name),
             event_observer: TikTokLiveEventObserver::new(),
+            event_sender,
         }
     }
 
@@ -47,7 +43,8 @@ impl TikTokLiveBuilder
     ///
     ///
     pub fn configure<F>(&mut self, on_configure: F) -> &mut Self
-        where F: FnOnce(&mut TikTokLiveSettings),
+    where
+        F: FnOnce(&mut TikTokLiveSettings),
     {
         on_configure(&mut self.settings);
         self
@@ -60,12 +57,10 @@ impl TikTokLiveBuilder
     ///    ## event  - invoked event
     ///  ```
     ///
-    pub fn on_event(&mut self, on_event: TikTokEventHandler) -> &mut Self
-    {
+    pub fn on_event(&mut self, on_event: TikTokEventHandler) -> &mut Self {
         self.event_observer.subscribe(on_event);
         self
     }
-
 
     ///
     /// Returns new instance of TikTokLiveClient
@@ -73,14 +68,12 @@ impl TikTokLiveBuilder
     pub fn build(&self) -> TikTokLiveClient {
         let settings = &self.settings;
         let observer = self.event_observer.clone();
-        let mapper = TikTokLiveMessageMapper
-        {};
+        let mapper = TikTokLiveMessageMapper {};
         let websocket_client = TikTokLiveWebsocketClient::new(mapper);
         let http_factory = HttpRequestFactory {
-            settings: settings.clone()
+            settings: settings.clone(),
         };
-        let http_client = TikTokLiveHttpClient
-        {
+        let http_client = TikTokLiveHttpClient {
             settings: settings.clone(),
             factory: http_factory,
         };
@@ -91,6 +84,7 @@ impl TikTokLiveBuilder
             observer,
             websocket_client,
             TikTokLiveInfo::default(),
+            self.event_sender.clone(),
         );
     }
 }
