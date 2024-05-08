@@ -8,7 +8,6 @@ edition = "2021"
 [dependencies]
 prettyplease = "0.2.16"
 log = "0.4"
-env_logger = "0.10.1"
 quote = "1.0"
 reqwest = "0.11"
 urlencoding = "2.1.3"
