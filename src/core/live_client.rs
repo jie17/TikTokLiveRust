@@ -46,10 +46,10 @@ impl TikTokLiveClient {
         };
     }
 
-    pub async fn connect(self) {
+    pub async fn connect(self) -> Result<(), Box<dyn std::error::Error>> {
         if *(self.room_info.connection_state.lock().unwrap()) != DISCONNECTED {
             warn!("Client already connected!");
-            return;
+            return Err("Client already connected!".into());
         }
 
         self.set_connection_state(CONNECTING);
@@ -75,7 +75,7 @@ impl TikTokLiveClient {
                 "Live stream for host is not online!, current status {:?}",
                 response.live_status
             );
-            return;
+            return Err("Live stream for host is not online!".into());
         }
 
         info!("Getting live connections information's");
@@ -93,6 +93,7 @@ impl TikTokLiveClient {
             running: Arc::new(AtomicBool::new(false)),
         };
         ws.start(response, client_arc).await;
+        Ok(())
     }
 
     pub fn disconnect(&self) {
