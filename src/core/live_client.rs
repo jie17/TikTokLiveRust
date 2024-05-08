@@ -115,3 +115,9 @@ impl TikTokLiveClient {
         info!("TikTokLive: {:?}", *data);
     }
 }
+
+impl Drop for TikTokLiveClient {
+    fn drop(&mut self) {
+        self.disconnect();
+    }
+}
