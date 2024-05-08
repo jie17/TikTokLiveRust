@@ -34,10 +34,10 @@ impl TikTokLiveHttpClient
             .as_json()
             .await;
 
-        if option.is_none()
-        {
-            panic!("Unable to get info about user ")
-        }
+        // if option.is_none()
+        // {
+        //     panic!("Unable to get info about user ")
+        // }
         let json = option.unwrap();
         return map_live_user_data_response(json);
     }
@@ -52,10 +52,10 @@ impl TikTokLiveHttpClient
             .await;
 
 
-        if option.is_none()
-        {
-            panic!("Unable to get info about live room")
-        }
+        // if option.is_none()
+        // {
+        //     panic!("Unable to get info about live room")
+        // }
         let json = option.unwrap();
         return map_live_data_response(json);
     }
@@ -79,10 +79,10 @@ impl TikTokLiveHttpClient
             .as_json()
             .await;
 
-        if option.is_none()
-        {
-            panic!("Unable sign url {}", url_to_sign.as_str())
-        }
+        // if option.is_none()
+        // {
+        //     panic!("Unable sign url {}", url_to_sign.as_str())
+        // }
         let json = option.unwrap();
         let sign_server_response = map_sign_server_response(json);
 
@@ -100,10 +100,10 @@ impl TikTokLiveHttpClient
 
         let optional_header = response.headers().get("set-cookie");
 
-        if optional_header.is_none()
-        {
-            panic!("Header was not received not provided")
-        }
+        // if optional_header.is_none()
+        // {
+        //     panic!("Header was not received not provided")
+        // }
         let header_value = optional_header.unwrap().to_str().unwrap().to_string();
 
 
