@@ -2,7 +2,6 @@ use generated::events::TikTokLiveEvent;
 use tokio::sync::mpsc;
 
 use crate::core::live_client_builder::TikTokLiveBuilder;
-use crate::core::live_client_http::TikTokLiveHttpClient;
 
 ///  # Data structures
 pub mod data;

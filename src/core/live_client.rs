@@ -1,7 +1,3 @@
-use std::cell::Cell;
-use std::ops::Deref;
-use std::pin::Pin;
-use std::rc::Rc;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 
@@ -11,7 +7,7 @@ use crate::core::live_client_events::TikTokLiveEventObserver;
 use crate::core::live_client_http::TikTokLiveHttpClient;
 use crate::core::live_client_mapper::TikTokLiveMessageMapper;
 use crate::core::live_client_websocket::TikTokLiveWebsocketClient;
-use crate::data::live_common::ConnectionState::{CONNECTED, CONNECTING, DISCONNECTED};
+use crate::data::live_common::ConnectionState::{CONNECTING, DISCONNECTED};
 use crate::data::live_common::{ConnectionState, TikTokLiveInfo, TikTokLiveSettings};
 use crate::generated::events::TikTokLiveEvent;
 use crate::http::http_data::LiveStatus::HostOnline;
@@ -60,7 +56,7 @@ impl TikTokLiveClient {
             .fetch_live_user_data(LiveUserDataRequest {
                 user_name: self.settings.host_name.clone(),
             })
-            .await;
+            .await?;
 
         info!("Getting live room information's");
         let room_id = response.room_id;
@@ -69,7 +65,7 @@ impl TikTokLiveClient {
             .fetch_live_data(LiveDataRequest {
                 room_id: room_id.clone(),
             })
-            .await;
+            .await?;
         if response.live_status != HostOnline {
             error!(
                 "Live stream for host is not online!, current status {:?}",
@@ -84,7 +80,7 @@ impl TikTokLiveClient {
             .fetch_live_connection_data(LiveConnectionDataRequest {
                 room_id: room_id.clone(),
             })
-            .await;
+            .await?;
 
         let client_arc = Arc::new(self);
 

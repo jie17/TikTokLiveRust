@@ -1,9 +1,6 @@
 use protobuf::Message;
-use std::ops::Deref;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use std::thread;
-use tokio::runtime::Runtime;
 use tokio_tungstenite::tungstenite::connect;
 use tokio_tungstenite::tungstenite::handshake::client::Request;
 
@@ -59,7 +56,7 @@ impl TikTokLiveWebsocketClient {
             while running.load(Ordering::SeqCst) {
                 let optional_message = socket.read_message();
 
-                if (optional_message.is_err()) {
+                if optional_message.is_err() {
                     continue;
                 }
                 let message = optional_message.unwrap();
