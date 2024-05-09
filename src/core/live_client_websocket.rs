@@ -1,6 +1,7 @@
 use protobuf::Message;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use tokio::sync::mpsc;
 use tokio_tungstenite::tungstenite::connect;
 use tokio_tungstenite::tungstenite::handshake::client::Request;
 
@@ -14,17 +15,22 @@ use crate::http::http_data::LiveConnectionDataResponse;
 pub struct TikTokLiveWebsocketClient {
     pub(crate) message_mapper: TikTokLiveMessageMapper,
     pub(crate) running: Arc<AtomicBool>,
+    pub(crate) event_sender: mpsc::Sender<TikTokLiveEvent>,
 }
 
 impl TikTokLiveWebsocketClient {
-    pub fn new(message_mapper: TikTokLiveMessageMapper) -> Self {
+    pub fn new(
+        message_mapper: TikTokLiveMessageMapper,
+        event_sender: mpsc::Sender<TikTokLiveEvent>,
+    ) -> Self {
         TikTokLiveWebsocketClient {
             message_mapper,
             running: Arc::new(AtomicBool::new(false)),
+            event_sender,
         }
     }
 
-    pub async fn start(&self, response: LiveConnectionDataResponse, client: Arc<TikTokLiveClient>) {
+    pub async fn start(&self, response: LiveConnectionDataResponse) {
         let host = response
             .web_socket_url
             .host_str()
@@ -44,13 +50,16 @@ impl TikTokLiveWebsocketClient {
 
         let (mut socket, _) = connect(request).expect("Failed to connect");
 
-        client.set_connection_state(CONNECTED);
-        client.publish_event(TikTokLiveEvent::OnConnected(TikTokConnectedEvent {}));
+        let _ = self
+            .event_sender
+            .send(TikTokLiveEvent::OnConnected(TikTokConnectedEvent {})).await;
 
         let running = self.running.clone();
         running.store(true, Ordering::SeqCst);
 
         let message_mapper = self.message_mapper.clone();
+
+        let event_sender = self.event_sender.clone();
 
         tokio::spawn(async move {
             while running.load(Ordering::SeqCst) {
@@ -82,7 +91,7 @@ impl TikTokLiveWebsocketClient {
                         .expect("Unable to send ack packet");
                 }
 
-                message_mapper.handle_webcast_response(webcast_response, client.as_ref());
+                message_mapper.handle_webcast_response(webcast_response, &event_sender).await;
             }
         });
     }

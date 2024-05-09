@@ -7,7 +7,7 @@ use crate::core::live_client_events::TikTokLiveEventObserver;
 use crate::core::live_client_http::TikTokLiveHttpClient;
 use crate::core::live_client_mapper::TikTokLiveMessageMapper;
 use crate::core::live_client_websocket::TikTokLiveWebsocketClient;
-use crate::data::live_common::ConnectionState::{CONNECTING, DISCONNECTED};
+use crate::data::live_common::ConnectionState::{CONNECTED, CONNECTING, DISCONNECTED};
 use crate::data::live_common::{ConnectionState, TikTokLiveInfo, TikTokLiveSettings};
 use crate::generated::events::TikTokLiveEvent;
 use crate::http::http_data::LiveStatus::HostOnline;
@@ -42,7 +42,7 @@ impl TikTokLiveClient {
         };
     }
 
-    pub async fn connect(self) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn connect(&self) -> Result<(), Box<dyn std::error::Error>> {
         if *(self.room_info.connection_state.lock().unwrap()) != DISCONNECTED {
             warn!("Client already connected!");
             return Err("Client already connected!".into());
@@ -82,13 +82,13 @@ impl TikTokLiveClient {
             })
             .await?;
 
-        let client_arc = Arc::new(self);
-
         let ws = TikTokLiveWebsocketClient {
             message_mapper: TikTokLiveMessageMapper {},
             running: Arc::new(AtomicBool::new(false)),
+            event_sender: self.event_sender.clone(),
         };
-        ws.start(response, client_arc).await;
+        ws.start(response).await;
+        self.set_connection_state(CONNECTED);
         Ok(())
     }
 

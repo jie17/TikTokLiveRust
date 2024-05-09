@@ -60,7 +60,7 @@ impl TikTokLiveBuilder {
         let settings = &self.settings;
         let observer = self.event_observer.clone();
         let mapper = TikTokLiveMessageMapper {};
-        let websocket_client = TikTokLiveWebsocketClient::new(mapper);
+        let websocket_client = TikTokLiveWebsocketClient::new(mapper, self.event_sender.clone());
         let http_factory = HttpRequestFactory {
             settings: settings.clone(),
         };

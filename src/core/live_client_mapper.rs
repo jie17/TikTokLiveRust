@@ -1,4 +1,5 @@
-use crate::core::live_client::TikTokLiveClient;
+use tokio::sync::mpsc;
+
 use crate::generated::events::{TikTokLiveEvent, TikTokWebsocketResponseEvent};
 use crate::generated::messages::webcast::WebcastResponse;
 
@@ -6,18 +7,21 @@ use crate::generated::messages::webcast::WebcastResponse;
 pub struct TikTokLiveMessageMapper {}
 
 impl TikTokLiveMessageMapper {
-    pub fn handle_webcast_response(
+    pub async fn handle_webcast_response(
         &self,
         webcast_response: WebcastResponse,
-        client: &TikTokLiveClient,
+        event_sender: &mpsc::Sender<TikTokLiveEvent>,
     ) {
-        client.publish_event(TikTokLiveEvent::OnWebsocketResponse(
-            TikTokWebsocketResponseEvent {
-                raw_data: webcast_response.clone(),
-            },
-        ));
+        let _ = event_sender
+            .send(TikTokLiveEvent::OnWebsocketResponse(
+                TikTokWebsocketResponseEvent {
+                    raw_data: webcast_response.clone(),
+                },
+            ))
+            .await;
         for message in &webcast_response.messages {
-            self.handle_single_message(message.clone(), client);
+            self.handle_single_message(message.clone(), event_sender)
+                .await;
         }
     }
 }
