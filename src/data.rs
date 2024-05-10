@@ -5,17 +5,13 @@ use crate::data::live_common::{HttpData, TikTokLiveSettings};
 
 pub mod live_common;
 
-
-pub fn create_default_settings(host_name: &str) -> TikTokLiveSettings
-{
-    return TikTokLiveSettings
-    {
+pub fn create_default_settings(host_name: &str) -> TikTokLiveSettings {
+    return TikTokLiveSettings {
         language: "en-US".to_string(),
         print_logs: true,
         reconnect_on_fail: true,
         host_name: host_name.to_string(),
-        http_data: HttpData
-        {
+        http_data: HttpData {
             time_out: Duration::from_secs(3),
             cookies: create_default_cookies(),
             headers: create_default_headers(),
@@ -24,9 +20,7 @@ pub fn create_default_settings(host_name: &str) -> TikTokLiveSettings
     };
 }
 
-
-fn create_default_params()  -> HashMap<String,String>
-{
+fn create_default_params() -> HashMap<String, String> {
     let mut params: Vec<(&str, &str)> = Vec::new();
     params.push(("aid", "1988"));
     params.push(("app_language", "en-US"));
@@ -61,13 +55,13 @@ fn create_default_params()  -> HashMap<String,String>
     params.push(("webcast_sdk_version", "1.3.0"));
     params.push(("update_version_code", "1.3.0"));
 
-    return params.iter()
+    return params
+        .iter()
         .map(|(key, value)| (key.to_string(), value.to_string()))
         .collect();
 }
 
-fn create_default_headers()  -> HashMap<String,String>
-{
+fn create_default_headers() -> HashMap<String, String> {
     let mut headers: Vec<(&str, &str)> = Vec::new();
 
     headers.push(("authority", "www.core.com"));
@@ -79,14 +73,12 @@ fn create_default_headers()  -> HashMap<String,String>
     headers.push(("Origin", "https://www.tiktok.com"));
     headers.push(("Accept-Language", "en-US,en; q=0.9"));
 
-
-    return headers.iter()
+    return headers
+        .iter()
         .map(|(key, value)| (key.to_string(), value.to_string()))
         .collect();
 }
 
-
-fn create_default_cookies() -> HashMap<String,String>
-{
-    return HashMap::new();
+fn create_default_cookies() -> HashMap<String, String> {
+    HashMap::new()
 }

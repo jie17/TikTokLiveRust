@@ -31,7 +31,7 @@ impl TikTokLiveWebsocketClient {
     pub async fn start(
         &self,
         response: LiveConnectionDataResponse,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<(), anyhow::Error> {
         let host = response
             .web_socket_url
             .host_str()

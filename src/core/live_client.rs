@@ -1,7 +1,7 @@
+use anyhow::anyhow;
+use log::{error, info, warn};
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
-
-use log::{error, info, warn};
 
 use crate::core::live_client_events::TikTokLiveEventObserver;
 use crate::core::live_client_http::TikTokLiveHttpClient;
@@ -32,20 +32,20 @@ impl TikTokLiveClient {
         room_info: TikTokLiveInfo,
         event_sender: mpsc::Sender<TikTokLiveEvent>,
     ) -> Self {
-        return TikTokLiveClient {
+        TikTokLiveClient {
             settings,
             http_client,
             event_observer,
             websocket_client: Arc::new(websocket_client),
             room_info,
             event_sender,
-        };
+        }
     }
 
-    pub async fn connect(&self) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn connect(&self) -> Result<(), anyhow::Error> {
         if *(self.room_info.connection_state.lock().unwrap()) != DISCONNECTED {
             warn!("Client already connected!");
-            return Err("Client already connected!".into());
+            return Err(anyhow!("Client already connected!"));
         }
 
         self.set_connection_state(CONNECTING);
@@ -71,7 +71,7 @@ impl TikTokLiveClient {
                 "Live stream for host is not online!, current status {:?}",
                 response.live_status
             );
-            return Err("Live stream for host is not online!".into());
+            return Err(anyhow!("Live stream for host is not online!"));
         }
 
         info!("Getting live connections information's");
