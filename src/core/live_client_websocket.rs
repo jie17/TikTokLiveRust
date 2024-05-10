@@ -1,3 +1,4 @@
+use log::warn;
 use protobuf::Message;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -28,10 +29,7 @@ impl TikTokLiveWebsocketClient {
         }
     }
 
-    pub async fn start(
-        &self,
-        response: LiveConnectionDataResponse,
-    ) -> Result<(), anyhow::Error> {
+    pub async fn start(&self, response: LiveConnectionDataResponse) -> Result<(), anyhow::Error> {
         let host = response
             .web_socket_url
             .host_str()
@@ -73,27 +71,34 @@ impl TikTokLiveWebsocketClient {
 
                 let buffer = message.into_data();
 
-                let mut push_frame = WebcastPushFrame::parse_from_bytes(buffer.as_slice())
-                    .expect("Unable to read push frame");
+                let push_frame = WebcastPushFrame::parse_from_bytes(buffer.as_slice());
+                if push_frame.is_err() {
+                    warn!("Unable to read push frame");
+                    continue;
+                }
+                let mut unwrapped_push_frame = push_frame.unwrap();
                 let webcast_response =
-                    WebcastResponse::parse_from_bytes(push_frame.Payload.as_mut_slice())
-                        .expect("Unable to read webcast response");
+                    WebcastResponse::parse_from_bytes(unwrapped_push_frame.Payload.as_mut_slice());
+                if webcast_response.is_err() {
+                    warn!("Unable to read webcast response");
+                    continue;
+                }
+                let unwrapped_webcast_response = webcast_response.unwrap();
 
-                if webcast_response.needsAck {
+                if unwrapped_webcast_response.needsAck {
                     let mut push_frame_ack = WebcastPushFrame::new();
                     push_frame_ack.PayloadType = "ack".to_string();
-                    push_frame_ack.LogId = push_frame.LogId;
-                    push_frame_ack.Payload = webcast_response.internalExt.clone().into_bytes();
+                    push_frame_ack.LogId = unwrapped_push_frame.LogId;
+                    push_frame_ack.Payload =
+                        unwrapped_webcast_response.internalExt.clone().into_bytes();
 
                     let binary = push_frame_ack.write_to_bytes().unwrap();
                     let message = tungstenite::protocol::Message::binary(binary);
-                    socket
-                        .write(message)
-                        .expect("Unable to send ack packet");
+                    socket.write(message).expect("Unable to send ack packet");
                 }
 
                 message_mapper
-                    .handle_webcast_response(webcast_response, &event_sender)
+                    .handle_webcast_response(unwrapped_webcast_response, &event_sender)
                     .await;
             }
         });
