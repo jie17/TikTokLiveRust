@@ -1,9 +1,10 @@
+use futures_util::{SinkExt, StreamExt};
 use log::warn;
 use protobuf::Message;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use tokio::sync::mpsc;
-use tokio_tungstenite::tungstenite::connect;
+use tokio_tungstenite::connect_async;
 use tokio_tungstenite::tungstenite::handshake::client::Request;
 
 use crate::core::live_client_mapper::TikTokLiveMessageMapper;
@@ -46,7 +47,7 @@ impl TikTokLiveWebsocketClient {
             .header("Sec-Websocket-Version", "13")
             .body(())?;
 
-        let (mut socket, _) = connect(request)?;
+        let (mut socket, _) = connect_async(request).await?;
 
         let _ = self
             .event_sender
@@ -62,12 +63,16 @@ impl TikTokLiveWebsocketClient {
 
         tokio::spawn(async move {
             while running.load(Ordering::SeqCst) {
-                let optional_message = socket.read_message();
+                let optional_message = socket.next().await;
 
-                if optional_message.is_err() {
+                if optional_message.is_none() {
                     continue;
                 }
-                let message = optional_message.unwrap();
+                let result_message = optional_message.unwrap();
+                if result_message.is_err() {
+                    continue;
+                }
+                let message = result_message.unwrap();
 
                 let buffer = message.into_data();
 
@@ -97,7 +102,9 @@ impl TikTokLiveWebsocketClient {
 
                     let binary = push_frame_ack.write_to_bytes().unwrap();
                     let message = tungstenite::protocol::Message::binary(binary);
-                    socket.write_message(message).expect("Unable to send ack packet");
+                    if let Err(err) = socket.send(message).await {
+                        warn!("Unable to send ack message, {}", err);
+                    }
                 }
 
                 message_mapper

@@ -97,15 +97,6 @@ impl TikTokLiveClient {
         self.set_connection_state(DISCONNECTED)
     }
 
-    pub fn publish_event(&self, event: TikTokLiveEvent) {
-        let sender = self.event_sender.clone();
-        tokio::spawn(async move {
-            if let Err(e) = sender.send(event).await {
-                eprintln!("Error sending event: {}", e);
-            }
-        });
-    }
-
     pub fn set_connection_state(&self, state: ConnectionState) {
         let mut data = self.room_info.connection_state.lock().unwrap();
         *data = state;
