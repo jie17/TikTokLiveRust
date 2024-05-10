@@ -73,14 +73,17 @@ impl TikTokLiveWebsocketClient {
 
                 let push_frame = WebcastPushFrame::parse_from_bytes(buffer.as_slice());
                 if push_frame.is_err() {
-                    warn!("Unable to read push frame");
+                    warn!("Unable to read push frame, {}", push_frame.err().unwrap());
                     continue;
                 }
                 let mut unwrapped_push_frame = push_frame.unwrap();
                 let webcast_response =
                     WebcastResponse::parse_from_bytes(unwrapped_push_frame.Payload.as_mut_slice());
                 if webcast_response.is_err() {
-                    warn!("Unable to read webcast response");
+                    warn!(
+                        "Unable to read webcast response, {}",
+                        webcast_response.err().unwrap()
+                    );
                     continue;
                 }
                 let unwrapped_webcast_response = webcast_response.unwrap();
