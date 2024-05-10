@@ -62,7 +62,7 @@ impl TikTokLiveWebsocketClient {
 
         tokio::spawn(async move {
             while running.load(Ordering::SeqCst) {
-                let optional_message = socket.read();
+                let optional_message = socket.read_message();
 
                 if optional_message.is_err() {
                     continue;
@@ -97,7 +97,7 @@ impl TikTokLiveWebsocketClient {
 
                     let binary = push_frame_ack.write_to_bytes().unwrap();
                     let message = tungstenite::protocol::Message::binary(binary);
-                    socket.write(message).expect("Unable to send ack packet");
+                    socket.write_message(message).expect("Unable to send ack packet");
                 }
 
                 message_mapper
