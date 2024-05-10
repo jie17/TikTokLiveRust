@@ -5,9 +5,7 @@ use tokio::sync::mpsc;
 use tokio_tungstenite::tungstenite::connect;
 use tokio_tungstenite::tungstenite::handshake::client::Request;
 
-use crate::core::live_client::TikTokLiveClient;
 use crate::core::live_client_mapper::TikTokLiveMessageMapper;
-use crate::data::live_common::ConnectionState::CONNECTED;
 use crate::generated::events::{TikTokConnectedEvent, TikTokLiveEvent};
 use crate::generated::messages::webcast::{WebcastPushFrame, WebcastResponse};
 use crate::http::http_data::LiveConnectionDataResponse;
@@ -30,7 +28,10 @@ impl TikTokLiveWebsocketClient {
         }
     }
 
-    pub async fn start(&self, response: LiveConnectionDataResponse) {
+    pub async fn start(
+        &self,
+        response: LiveConnectionDataResponse,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let host = response
             .web_socket_url
             .host_str()
@@ -45,14 +46,14 @@ impl TikTokLiveWebsocketClient {
             .header("Sec-Websocket-Key", "asd")
             .header("Cookie", response.web_socket_cookies)
             .header("Sec-Websocket-Version", "13")
-            .body(())
-            .unwrap();
+            .body(())?;
 
-        let (mut socket, _) = connect(request).expect("Failed to connect");
+        let (mut socket, _) = connect(request)?;
 
         let _ = self
             .event_sender
-            .send(TikTokLiveEvent::OnConnected(TikTokConnectedEvent {})).await;
+            .send(TikTokLiveEvent::OnConnected(TikTokConnectedEvent {}))
+            .await;
 
         let running = self.running.clone();
         running.store(true, Ordering::SeqCst);
@@ -63,7 +64,7 @@ impl TikTokLiveWebsocketClient {
 
         tokio::spawn(async move {
             while running.load(Ordering::SeqCst) {
-                let optional_message = socket.read_message();
+                let optional_message = socket.read();
 
                 if optional_message.is_err() {
                     continue;
@@ -87,13 +88,16 @@ impl TikTokLiveWebsocketClient {
                     let binary = push_frame_ack.write_to_bytes().unwrap();
                     let message = tungstenite::protocol::Message::binary(binary);
                     socket
-                        .write_message(message)
+                        .write(message)
                         .expect("Unable to send ack packet");
                 }
 
-                message_mapper.handle_webcast_response(webcast_response, &event_sender).await;
+                message_mapper
+                    .handle_webcast_response(webcast_response, &event_sender)
+                    .await;
             }
         });
+        Ok(())
     }
 
     pub fn stop(&self) {

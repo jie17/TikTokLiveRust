@@ -87,7 +87,7 @@ impl TikTokLiveClient {
             running: Arc::new(AtomicBool::new(false)),
             event_sender: self.event_sender.clone(),
         };
-        ws.start(response).await;
+        ws.start(response).await?;
         self.set_connection_state(CONNECTED);
         Ok(())
     }
