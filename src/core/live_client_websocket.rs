@@ -3,12 +3,12 @@ use log::warn;
 use protobuf::Message;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use tokio::sync::mpsc;
+use tokio::sync::{mpsc, Mutex};
 use tokio_tungstenite::connect_async;
 use tokio_tungstenite::tungstenite::handshake::client::Request;
 
 use crate::core::live_client_mapper::TikTokLiveMessageMapper;
-use crate::generated::events::{TikTokConnectedEvent, TikTokLiveEvent};
+use crate::generated::events::{TikTokConnectedEvent, TikTokDisconnectedEvent, TikTokLiveEvent};
 use crate::generated::messages::webcast::{WebcastPushFrame, WebcastResponse};
 use crate::http::http_data::LiveConnectionDataResponse;
 
@@ -47,7 +47,9 @@ impl TikTokLiveWebsocketClient {
             .header("Sec-Websocket-Version", "13")
             .body(())?;
 
-        let (mut socket, _) = connect_async(request).await?;
+        let (socket, _) = connect_async(request).await?;
+        let socket = Arc::new(Mutex::new(socket));
+        let new_socket = socket.clone();
 
         let _ = self
             .event_sender
@@ -62,12 +64,27 @@ impl TikTokLiveWebsocketClient {
         let event_sender = self.event_sender.clone();
 
         tokio::spawn(async move {
+            loop {
+                let message = tungstenite::protocol::Message::binary(vec![
+                    //3A026862
+                    0x3A, 0x02, 0x68, 0x62,
+                ]);
+                let _ = new_socket.lock().await.send(message).await;
+                tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+            }
+        });
+
+        tokio::spawn(async move {
             while running.load(Ordering::SeqCst) {
-                let optional_message = socket.next().await;
+                let optional_message = socket.lock().await.next().await;
 
                 if optional_message.is_none() {
-                    warn!("Unable to read message");
-                    continue;
+                    warn!("WS connection closed, exiting");
+                    event_sender
+                        .send(TikTokLiveEvent::OnDisconnected(TikTokDisconnectedEvent {}))
+                        .await
+                        .unwrap();
+                    break;
                 }
                 let result_message = optional_message.unwrap();
                 if result_message.is_err() {
@@ -104,7 +121,7 @@ impl TikTokLiveWebsocketClient {
 
                     let binary = push_frame_ack.write_to_bytes().unwrap();
                     let message = tungstenite::protocol::Message::binary(binary);
-                    if let Err(err) = socket.send(message).await {
+                    if let Err(err) = socket.lock().await.send(message).await {
                         warn!("Unable to send ack message, {}", err);
                     }
                 }
