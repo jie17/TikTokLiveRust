@@ -11,7 +11,7 @@ pub fn map_live_user_data_response(json: String) -> Result<LiveUserDataResponse,
 
     let message = json_value["message"]
         .as_str()
-        .ok_or(anyhow!("TikTokUserInfo.UserStatus.NotFound"))?;
+        .ok_or(anyhow!("no message"))?;
     if message.eq("params_error") {
         error!("fetchRoomIdFromTiktokApi -> Unable to fetch roomID, contact the developer");
         return Err(anyhow!(
