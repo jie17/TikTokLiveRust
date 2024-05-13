@@ -69,14 +69,17 @@ impl TikTokLiveWebsocketClient {
                     //3A026862
                     0x3A, 0x02, 0x68, 0x62,
                 ]);
-                let _ = new_socket.lock().await.send(message).await;
-                tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+                let mut socket = new_socket.lock().await;
+                let _ = socket.send(message).await;
+                drop(socket);
+                tokio::time::sleep(std::time::Duration::from_secs(10)).await;
             }
         });
 
         tokio::spawn(async move {
             while running.load(Ordering::SeqCst) {
-                let optional_message = socket.lock().await.next().await;
+                let mut socket = socket.lock().await;
+                let optional_message = socket.next().await;
 
                 if optional_message.is_none() {
                     warn!("WS connection closed, exiting");
@@ -121,10 +124,12 @@ impl TikTokLiveWebsocketClient {
 
                     let binary = push_frame_ack.write_to_bytes().unwrap();
                     let message = tungstenite::protocol::Message::binary(binary);
-                    if let Err(err) = socket.lock().await.send(message).await {
+                    if let Err(err) = socket.send(message).await {
                         warn!("Unable to send ack message, {}", err);
                     }
                 }
+
+                drop(socket);
 
                 message_mapper
                     .handle_webcast_response(unwrapped_webcast_response, &event_sender)
