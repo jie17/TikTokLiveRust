@@ -39,7 +39,7 @@ impl TikTokLiveHttpClient {
                 "Unable to get info about user {}",
                 request.user_name.as_str()
             ))?;
-        Ok(map_live_user_data_response(json))
+        map_live_user_data_response(json)
     }
     pub async fn fetch_live_data(
         &self,

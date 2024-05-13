@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use log::error;
 use serde_json::Value;
 
@@ -5,25 +6,34 @@ use crate::http::http_data::LiveStatus::{HostNotFound, HostOffline, HostOnline};
 use crate::http::http_data::UserStatus::{Live, LivePaused, NotFound, Offline};
 use crate::http::http_data::{LiveDataResponse, LiveUserDataResponse, SignServerResponse};
 
-pub fn map_live_user_data_response(json: String) -> LiveUserDataResponse {
-    let json_value: Value = serde_json::from_str(json.as_str()).unwrap();
+pub fn map_live_user_data_response(json: String) -> Result<LiveUserDataResponse, anyhow::Error> {
+    let json_value: Value = serde_json::from_str(json.as_str())?;
 
-    let message = json_value["message"].as_str().unwrap();
+    let message = json_value["message"]
+        .as_str()
+        .ok_or(anyhow!("TikTokUserInfo.UserStatus.NotFound"))?;
     if message.eq("params_error") {
         error!("fetchRoomIdFromTiktokApi -> Unable to fetch roomID, contact the developer");
+        return Err(anyhow!(
+            "fetchRoomIdFromTiktokApi -> Unable to fetch roomID, contact the developer"
+        ))?;
     }
     if message.eq("user_not_found") {
         error!("TikTokUserInfo.UserStatus.NotFound");
+        return Err(anyhow!("TikTokUserInfo.UserStatus.NotFound"))?;
     }
 
     let option_data = json_value["data"].as_object();
-    if option_data.is_none() {
-        error!("TikTokUserInfo.UserStatus.NotFound");
-    }
-    let option = option_data.unwrap();
-    let user = option["user"].as_object().unwrap();
-    let room_id = user["roomId"].as_str().unwrap();
-    let status = user["status"].as_i64().unwrap();
+    let option = option_data.ok_or(anyhow!("TikTokUserInfo.UserStatus.NotFound"))?;
+    let user = option["user"]
+        .as_object()
+        .ok_or(anyhow!("TikTokUserInfo.UserStatus.NotFound"))?;
+    let room_id = user["roomId"]
+        .as_str()
+        .ok_or(anyhow!("TikTokUserInfo.UserStatus.NotFound"))?;
+    let status = user["status"]
+        .as_i64()
+        .ok_or(anyhow!("TikTokUserInfo.UserStatus.NotFound"))?;
 
     let user_status = match status {
         2 => Live,
@@ -32,15 +42,19 @@ pub fn map_live_user_data_response(json: String) -> LiveUserDataResponse {
         _ => NotFound,
     };
 
-    let live_room = option["liveRoom"].as_object().unwrap();
-    let start_time = live_room["startTime"].as_i64().unwrap();
+    let live_room = option["liveRoom"]
+        .as_object()
+        .ok_or(anyhow!("no liveRoom"))?;
+    let start_time = live_room["startTime"]
+        .as_i64()
+        .ok_or(anyhow!("no startTime"))?;
 
-    LiveUserDataResponse {
+    Ok(LiveUserDataResponse {
         user_status,
         json: json.to_string(),
         room_id: room_id.to_string(),
         started_at_timestamp: start_time,
-    }
+    })
 }
 
 pub fn map_live_data_response(json: String) -> LiveDataResponse {
