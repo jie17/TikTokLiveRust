@@ -72,7 +72,6 @@ impl TikTokLiveWebsocketClient {
                     break;
                 }
                 let message = message.unwrap();
-                info!("Sending message");
                 if let Err(err) = write.send(message).await {
                     warn!("Unable to send message, {}", err);
                 }
@@ -85,7 +84,6 @@ impl TikTokLiveWebsocketClient {
                     //3A026862
                     0x3A, 0x02, 0x68, 0x62,
                 ]);
-                info!("Sending ping message");
                 if let Err(err) = tx.send(message).await {
                     warn!("Unable to send ping message, {}", err);
                 }
@@ -140,7 +138,6 @@ impl TikTokLiveWebsocketClient {
 
                     let binary = push_frame_ack.write_to_bytes().unwrap();
                     let message = tungstenite::protocol::Message::binary(binary);
-                    info!("Sending ack message");
                     if let Err(err) = tx2.send(message).await {
                         warn!("Unable to send ping message, {}", err);
                     }
