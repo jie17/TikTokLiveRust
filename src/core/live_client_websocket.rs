@@ -1,5 +1,5 @@
 use futures_util::{SinkExt, StreamExt};
-use log::warn;
+use log::{info, warn};
 use protobuf::Message;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -70,7 +70,10 @@ impl TikTokLiveWebsocketClient {
                     0x3A, 0x02, 0x68, 0x62,
                 ]);
                 let mut socket = new_socket.lock().await;
-                let _ = socket.send(message).await;
+                info!("Sending ping message");
+                if let Err(err) = socket.send(message).await {
+                    warn!("Unable to send ping message, {}", err);
+                }
                 drop(socket);
                 tokio::time::sleep(std::time::Duration::from_secs(10)).await;
             }
@@ -124,6 +127,7 @@ impl TikTokLiveWebsocketClient {
 
                     let binary = push_frame_ack.write_to_bytes().unwrap();
                     let message = tungstenite::protocol::Message::binary(binary);
+                    info!("Sending ack message");
                     if let Err(err) = socket.send(message).await {
                         warn!("Unable to send ack message, {}", err);
                     }
