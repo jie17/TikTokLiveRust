@@ -3,7 +3,7 @@ use log::{info, warn};
 use protobuf::Message;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use tokio::sync::{mpsc, Mutex};
+use tokio::sync::mpsc;
 use tokio_tungstenite::connect_async;
 use tokio_tungstenite::tungstenite::handshake::client::Request;
 
@@ -48,8 +48,9 @@ impl TikTokLiveWebsocketClient {
             .body(())?;
 
         let (socket, _) = connect_async(request).await?;
-        let socket = Arc::new(Mutex::new(socket));
-        let new_socket = socket.clone();
+        let (mut write, mut read) = socket.split();
+        let (tx, mut rx) = mpsc::channel::<tungstenite::protocol::Message>(100);
+        let tx2 = tx.clone();
 
         let _ = self
             .event_sender
@@ -65,24 +66,36 @@ impl TikTokLiveWebsocketClient {
 
         tokio::spawn(async move {
             loop {
+                let message = rx.recv().await;
+                if message.is_none() {
+                    warn!("Unable to read message, exiting");
+                    break;
+                }
+                let message = message.unwrap();
+                info!("Sending message");
+                if let Err(err) = write.send(message).await {
+                    warn!("Unable to send message, {}", err);
+                }
+            }
+        });
+
+        tokio::spawn(async move {
+            loop {
                 let message = tungstenite::protocol::Message::binary(vec![
                     //3A026862
                     0x3A, 0x02, 0x68, 0x62,
                 ]);
-                let mut socket = new_socket.lock().await;
                 info!("Sending ping message");
-                if let Err(err) = socket.send(message).await {
+                if let Err(err) = tx.send(message).await {
                     warn!("Unable to send ping message, {}", err);
                 }
-                drop(socket);
                 tokio::time::sleep(std::time::Duration::from_secs(10)).await;
             }
         });
 
         tokio::spawn(async move {
             while running.load(Ordering::SeqCst) {
-                let mut socket = socket.lock().await;
-                let optional_message = socket.next().await;
+                let optional_message = read.next().await;
 
                 if optional_message.is_none() {
                     warn!("WS connection closed, exiting");
@@ -128,12 +141,10 @@ impl TikTokLiveWebsocketClient {
                     let binary = push_frame_ack.write_to_bytes().unwrap();
                     let message = tungstenite::protocol::Message::binary(binary);
                     info!("Sending ack message");
-                    if let Err(err) = socket.send(message).await {
-                        warn!("Unable to send ack message, {}", err);
+                    if let Err(err) = tx2.send(message).await {
+                        warn!("Unable to send ping message, {}", err);
                     }
                 }
-
-                drop(socket);
 
                 message_mapper
                     .handle_webcast_response(unwrapped_webcast_response, &event_sender)
