@@ -1,5 +1,5 @@
 use futures_util::{SinkExt, StreamExt};
-use log::{info, warn};
+use log::warn;
 use protobuf::Message;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;

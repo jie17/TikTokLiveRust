@@ -92,13 +92,12 @@ impl TikTokLiveHttpClient {
             .with_url(sign_server_response.signed_url.as_str())
             .build_get_request()
             .send()
-            .await
-            .unwrap();
+            .await?;
 
-        let header = response
-            .headers()
-            .get("set-cookie")
-            .ok_or(anyhow!("Header was not received not provided"))?;
+        let header = response.headers().get("set-cookie").ok_or(anyhow!(
+            "Header was not received, {:?}",
+            response
+        ))?;
 
         let header_value = header.to_str().unwrap().to_string();
 
