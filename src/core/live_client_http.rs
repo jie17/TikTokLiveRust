@@ -99,10 +99,12 @@ impl TikTokLiveHttpClient {
             .send()
             .await?;
 
+        info!("Webcast Response: {:?}", response);
+
         let header = response
             .headers()
             .get("set-cookie")
-            .ok_or(anyhow!("Header was not received, {:?}", response))?;
+            .ok_or(anyhow!("Header was not received"))?;
 
         let header_value = header.to_str().unwrap().to_string();
 
