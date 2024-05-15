@@ -84,6 +84,8 @@ impl TikTokLiveHttpClient {
             .await
             .ok_or(anyhow!("Unable to sign url {}", url_to_sign.as_str()))?;
 
+        info!("sign_server_response: {:?}", json);
+
         let sign_server_response = map_sign_server_response(json);
 
         info!("Signed URL: {}", sign_server_response.signed_url);
