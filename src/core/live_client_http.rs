@@ -1,4 +1,5 @@
 use anyhow::anyhow;
+use log::info;
 use protobuf::Message;
 
 use crate::data::live_common::TikTokLiveSettings;
@@ -69,6 +70,8 @@ impl TikTokLiveHttpClient {
             .with_param("room_id", request.room_id.as_str())
             .as_url();
 
+        info!("URL to sign: {}", url_to_sign.as_str());
+
         //Signing URL
         let json = self
             .factory
@@ -83,6 +86,8 @@ impl TikTokLiveHttpClient {
 
         let sign_server_response = map_sign_server_response(json);
 
+        info!("Signed URL: {}", sign_server_response.signed_url);
+
         //Getting credentials for connection to websocket
         let response = self
             .factory
@@ -94,10 +99,10 @@ impl TikTokLiveHttpClient {
             .send()
             .await?;
 
-        let header = response.headers().get("set-cookie").ok_or(anyhow!(
-            "Header was not received, {:?}",
-            response
-        ))?;
+        let header = response
+            .headers()
+            .get("set-cookie")
+            .ok_or(anyhow!("Header was not received, {:?}", response))?;
 
         let header_value = header.to_str().unwrap().to_string();
 
