@@ -1,8 +1,6 @@
+use reqwest::{Client, RequestBuilder};
 use std::collections::HashMap;
 use std::time::Duration;
-
-use bytes::Bytes;
-use reqwest::{Client, RequestBuilder};
 use urlencoding::encode;
 
 use crate::data::live_common::{HttpData, TikTokLiveSettings};
@@ -85,25 +83,13 @@ impl HttpRequestBuilder {
         res
     }
 
-    pub async fn as_json(&mut self) -> Option<String> {
-        let result = self.build_get_request().send().await.unwrap();
+    pub async fn as_json(&mut self) -> Result<String, anyhow::Error> {
+        let result = self.build_get_request().send().await?;
 
         if result.status().is_success() {
-            let json_res = result.text().await.unwrap();
-            Some(json_res)
+            Ok(result.text().await?)
         } else {
-            None
-        }
-    }
-
-    pub async fn as_bytes(&mut self) -> Option<Bytes> {
-        let result = self.build_get_request().send().await.unwrap();
-
-        if result.status().is_success() {
-            let bytes = result.bytes().await.unwrap();
-            Some(bytes)
-        } else {
-            None
+            Err(anyhow::anyhow!("Request failed, {:?}", result))
         }
     }
 

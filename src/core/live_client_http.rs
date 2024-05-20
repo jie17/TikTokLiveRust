@@ -35,11 +35,7 @@ impl TikTokLiveHttpClient {
             .with_param("uniqueId", request.user_name.as_str())
             .with_param("sourceType", "54")
             .as_json()
-            .await
-            .ok_or(anyhow!(
-                "Unable to get info about user {}",
-                request.user_name.as_str()
-            ))?;
+            .await?;
         map_live_user_data_response(json)
     }
     pub async fn fetch_live_data(
@@ -53,8 +49,7 @@ impl TikTokLiveHttpClient {
             .with_url(url.as_str())
             .with_param("room_id", request.room_id.as_str())
             .as_json()
-            .await
-            .ok_or(anyhow!("Unable to get info about live room"))?;
+            .await?;
         Ok(map_live_data_response(json))
     }
 
@@ -81,8 +76,7 @@ impl TikTokLiveHttpClient {
             .with_param("uuc", "1")
             .with_param("url", url_to_sign.as_str())
             .as_json()
-            .await
-            .ok_or(anyhow!("Unable to sign url {}", url_to_sign.as_str()))?;
+            .await?;
 
         info!("sign_server_response: {:?}", json);
 

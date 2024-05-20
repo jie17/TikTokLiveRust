@@ -14,13 +14,13 @@ pub fn map_live_user_data_response(json: String) -> Result<LiveUserDataResponse,
         .ok_or(anyhow!("no message"))?;
     if message.eq("params_error") {
         error!("fetchRoomIdFromTiktokApi -> Unable to fetch roomID, contact the developer");
-        return Err(anyhow!(
+        Err(anyhow!(
             "fetchRoomIdFromTiktokApi -> Unable to fetch roomID, contact the developer"
         ))?;
     }
     if message.eq("user_not_found") {
         error!("TikTokUserInfo.UserStatus.NotFound");
-        return Err(anyhow!("TikTokUserInfo.UserStatus.NotFound"))?;
+        Err(anyhow!("TikTokUserInfo.UserStatus.NotFound"))?;
     }
 
     let option_data = json_value["data"].as_object();

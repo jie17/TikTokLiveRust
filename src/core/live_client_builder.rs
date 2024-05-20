@@ -69,13 +69,13 @@ impl TikTokLiveBuilder {
             factory: http_factory,
         };
 
-        return TikTokLiveClient::new(
+        TikTokLiveClient::new(
             settings.clone(),
             http_client,
             observer,
             websocket_client,
             TikTokLiveInfo::default(),
             self.event_sender.clone(),
-        );
+        )
     }
 }
