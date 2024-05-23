@@ -30,7 +30,7 @@ impl TikTokLiveClient {
         }
     }
 
-    pub async fn connect(&self) -> Result<(), anyhow::Error> {
+    pub async fn connect(&mut self) -> Result<(), anyhow::Error> {
         if *(self.room_info.connection_state.lock().unwrap()) != DISCONNECTED {
             warn!("Client already connected!");
             return Err(anyhow!("Client already connected!"));
@@ -75,7 +75,7 @@ impl TikTokLiveClient {
         Ok(())
     }
 
-    pub fn disconnect(&self) {
+    pub fn disconnect(&mut self) {
         self.websocket_client.stop();
         self.set_connection_state(DISCONNECTED)
     }
