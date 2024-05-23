@@ -18,7 +18,7 @@ pub struct TikTokLiveClient {
     settings: TikTokLiveSettings,
     http_client: TikTokLiveHttpClient,
     event_observer: TikTokLiveEventObserver,
-    websocket_client: Arc<TikTokLiveWebsocketClient>,
+    websocket_client: TikTokLiveWebsocketClient,
     room_info: TikTokLiveInfo,
     event_sender: mpsc::Sender<TikTokLiveEvent>,
 }
@@ -36,7 +36,7 @@ impl TikTokLiveClient {
             settings,
             http_client,
             event_observer,
-            websocket_client: Arc::new(websocket_client),
+            websocket_client,
             room_info,
             event_sender,
         }
@@ -82,9 +82,10 @@ impl TikTokLiveClient {
             })
             .await?;
 
-        let ws = TikTokLiveWebsocketClient {
+        let mut ws = TikTokLiveWebsocketClient {
             message_mapper: TikTokLiveMessageMapper {},
             running: Arc::new(AtomicBool::new(false)),
+            join_set: tokio::task::JoinSet::new(),
             event_sender: self.event_sender.clone(),
         };
         ws.start(response).await?;
@@ -92,7 +93,7 @@ impl TikTokLiveClient {
         Ok(())
     }
 
-    pub fn disconnect(&self) {
+    pub fn disconnect(&mut self) {
         self.websocket_client.stop();
         self.set_connection_state(DISCONNECTED)
     }

@@ -4,6 +4,7 @@ use protobuf::Message;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use tokio::sync::mpsc;
+use tokio::task::JoinSet;
 use tokio_tungstenite::connect_async;
 use tokio_tungstenite::tungstenite::handshake::client::Request;
 
@@ -15,6 +16,7 @@ use crate::http::http_data::LiveConnectionDataResponse;
 pub struct TikTokLiveWebsocketClient {
     pub(crate) message_mapper: TikTokLiveMessageMapper,
     pub(crate) running: Arc<AtomicBool>,
+    pub(crate) join_set: JoinSet<()>,
     pub(crate) event_sender: mpsc::Sender<TikTokLiveEvent>,
 }
 
@@ -26,11 +28,15 @@ impl TikTokLiveWebsocketClient {
         TikTokLiveWebsocketClient {
             message_mapper,
             running: Arc::new(AtomicBool::new(false)),
+            join_set: JoinSet::new(),
             event_sender,
         }
     }
 
-    pub async fn start(&self, response: LiveConnectionDataResponse) -> Result<(), anyhow::Error> {
+    pub async fn start(
+        &mut self,
+        response: LiveConnectionDataResponse,
+    ) -> Result<(), anyhow::Error> {
         let host = response
             .web_socket_url
             .host_str()
@@ -64,7 +70,7 @@ impl TikTokLiveWebsocketClient {
 
         let event_sender = self.event_sender.clone();
 
-        tokio::spawn(async move {
+        self.join_set.spawn(async move {
             loop {
                 let message = rx.recv().await;
                 if message.is_none() {
@@ -78,7 +84,7 @@ impl TikTokLiveWebsocketClient {
             }
         });
 
-        tokio::spawn(async move {
+        self.join_set.spawn(async move {
             loop {
                 let message = tungstenite::protocol::Message::binary(vec![
                     //3A026862
@@ -91,7 +97,8 @@ impl TikTokLiveWebsocketClient {
             }
         });
 
-        tokio::spawn(async move {
+        let running = self.running.clone();
+        self.join_set.spawn(async move {
             while running.load(Ordering::SeqCst) {
                 let optional_message = read.next().await;
 
@@ -151,7 +158,8 @@ impl TikTokLiveWebsocketClient {
         Ok(())
     }
 
-    pub fn stop(&self) {
+    pub fn stop(&mut self) {
         self.running.store(false, Ordering::SeqCst);
+        self.join_set.abort_all();
     }
 }
