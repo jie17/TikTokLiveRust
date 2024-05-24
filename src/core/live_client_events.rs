@@ -9,6 +9,12 @@ pub struct TikTokLiveEventObserver
     pub events: Vec<TikTokEventHandler>,
 }
 
+impl Default for TikTokLiveEventObserver {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TikTokLiveEventObserver
 {
     pub fn new() -> Self

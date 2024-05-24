@@ -6,7 +6,7 @@ use crate::data::live_common::{HttpData, TikTokLiveSettings};
 pub mod live_common;
 
 pub fn create_default_settings(host_name: &str) -> TikTokLiveSettings {
-    return TikTokLiveSettings {
+    TikTokLiveSettings {
         language: "en-US".to_string(),
         print_logs: true,
         reconnect_on_fail: true,
@@ -17,43 +17,44 @@ pub fn create_default_settings(host_name: &str) -> TikTokLiveSettings {
             headers: create_default_headers(),
             params: create_default_params(),
         },
-    };
+    }
 }
 
 fn create_default_params() -> HashMap<String, String> {
-    let mut params: Vec<(&str, &str)> = Vec::new();
-    params.push(("aid", "1988"));
-    params.push(("app_language", "en-US"));
-    params.push(("app_name", "tiktok_web"));
-    params.push(("browser_language", "en"));
-    params.push(("browser_name", "Mozilla"));
-    params.push(("browser_online", "true"));
-    params.push(("browser_platform", "Win32"));
-    params.push(("browser_version", "5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.5005.63 Safari/537.36"));
-    params.push(("cookie_enabled", "true"));
-    params.push(("cursor", ""));
-    params.push(("internal_ext", ""));
-    params.push(("device_platform", "web"));
-    params.push(("focus_state", "true"));
-    params.push(("from_page", "user"));
-    params.push(("history_len", "4"));
-    params.push(("is_fullscreen", "false"));
-    params.push(("is_page_visible", "true"));
-    params.push(("did_rule", "3"));
-    params.push(("fetch_rule", "1"));
-    params.push(("identity", "audience"));
-    params.push(("last_rtt", "0"));
-    params.push(("live_id", "12"));
-    params.push(("resp_content_type", "protobuf"));
-    params.push(("screen_height", "1152"));
-    params.push(("screen_width", "2048"));
-    params.push(("tz_name", "Europe/Berlin"));
-    params.push(("referer", "https, //www.core.com/"));
-    params.push(("root_referer", "https, //www.core.com/"));
-    params.push(("msToken", ""));
-    params.push(("version_code", "180800"));
-    params.push(("webcast_sdk_version", "1.3.0"));
-    params.push(("update_version_code", "1.3.0"));
+    let params: Vec<(&str, &str)> = vec![
+        ("aid", "1988"),
+        ("app_language", "en-US"),
+        ("app_name", "tiktok_web"),
+        ("browser_language", "en"),
+        ("browser_name", "Mozilla"),
+        ("browser_online", "true"),
+        ("browser_platform", "Win32"),
+        ("browser_version", "5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.5005.63 Safari/537.36"),
+        ("cookie_enabled", "true"),
+        ("cursor", ""),
+        ("internal_ext", ""),
+        ("device_platform", "web"),
+        ("focus_state", "true"),
+        ("from_page", "user"),
+        ("history_len", "4"),
+        ("is_fullscreen", "false"),
+        ("is_page_visible", "true"),
+        ("did_rule", "3"),
+        ("fetch_rule", "1"),
+        ("identity", "audience"),
+        ("last_rtt", "0"),
+        ("live_id", "12"),
+        ("resp_content_type", "protobuf"),
+        ("screen_height", "1152"),
+        ("screen_width", "2048"),
+        ("tz_name", "Europe/Berlin"),
+        ("referer", "https, //www.core.com/"),  
+        ("root_referer", "https, //www.core.com/"),
+        ("msToken", ""),
+        ("version_code", "180800"),
+        ("webcast_sdk_version", "1.3.0"),
+        ("update_version_code", "1.3.0"),
+    ];
 
     return params
         .iter()
@@ -62,16 +63,15 @@ fn create_default_params() -> HashMap<String, String> {
 }
 
 fn create_default_headers() -> HashMap<String, String> {
-    let mut headers: Vec<(&str, &str)> = Vec::new();
-
-    headers.push(("authority", "www.core.com"));
-
-    headers.push(("Cache-Control", "max-age=0"));
-    headers.push(("Accept", "text/html,application/json,application/protobuf"));
-    headers.push(("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.5005.63 Safari/537.36"));
-    headers.push(("Referer", "https://www.tiktok.com/"));
-    headers.push(("Origin", "https://www.tiktok.com"));
-    headers.push(("Accept-Language", "en-US,en; q=0.9"));
+    let headers: Vec<(&str, &str)> = vec![
+        ("authority", "www.core.com"),
+        ("Cache-Control", "max-age=0"),
+        ("Accept", "text/html,application/json,application/protobuf"),
+        ("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.5005.63 Safari/537.36"),
+        ("Referer", "https://www.tiktok.com/"),
+        ("Origin", "https://www.tiktok.com"),
+        ("Accept-Language", "en-US,en; q=0.9"),
+    ];
 
     return headers
         .iter()

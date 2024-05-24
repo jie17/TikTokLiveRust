@@ -32,14 +32,11 @@ pub struct TikTokLiveInfo {
 }
 
 #[derive(PartialEq, Debug)]
+#[derive(Default)]
 pub enum ConnectionState {
     CONNECTING,
     CONNECTED,
+    #[default]
     DISCONNECTED,
 }
 
-impl Default for ConnectionState {
-    fn default() -> Self {
-        ConnectionState::DISCONNECTED
-    }
-}
