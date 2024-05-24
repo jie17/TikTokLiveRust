@@ -58,7 +58,6 @@ impl TikTokLiveBuilder {
     ///
     pub fn build(&self) -> TikTokLiveClient {
         let settings = &self.settings;
-        let observer = self.event_observer.clone();
         let mapper = TikTokLiveMessageMapper {};
         let websocket_client = TikTokLiveWebsocketClient::new(mapper, self.event_sender.clone());
         let http_factory = HttpRequestFactory {
@@ -72,10 +71,8 @@ impl TikTokLiveBuilder {
         TikTokLiveClient::new(
             settings.clone(),
             http_client,
-            observer,
             websocket_client,
             TikTokLiveInfo::default(),
-            self.event_sender.clone(),
         )
     }
 }

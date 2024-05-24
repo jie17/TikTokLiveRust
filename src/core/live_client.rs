@@ -1,44 +1,32 @@
 use anyhow::anyhow;
 use log::{error, info, warn};
-use std::sync::atomic::AtomicBool;
-use std::sync::Arc;
 
-use crate::core::live_client_events::TikTokLiveEventObserver;
 use crate::core::live_client_http::TikTokLiveHttpClient;
-use crate::core::live_client_mapper::TikTokLiveMessageMapper;
 use crate::core::live_client_websocket::TikTokLiveWebsocketClient;
 use crate::data::live_common::ConnectionState::{CONNECTED, CONNECTING, DISCONNECTED};
 use crate::data::live_common::{ConnectionState, TikTokLiveInfo, TikTokLiveSettings};
-use crate::generated::events::TikTokLiveEvent;
 use crate::http::http_data::LiveStatus::HostOnline;
 use crate::http::http_data::{LiveConnectionDataRequest, LiveDataRequest, LiveUserDataRequest};
-use tokio::sync::mpsc;
 
 pub struct TikTokLiveClient {
     settings: TikTokLiveSettings,
     http_client: TikTokLiveHttpClient,
-    event_observer: TikTokLiveEventObserver,
-    websocket_client: Arc<TikTokLiveWebsocketClient>,
+    websocket_client: TikTokLiveWebsocketClient,
     room_info: TikTokLiveInfo,
-    event_sender: mpsc::Sender<TikTokLiveEvent>,
 }
 
 impl TikTokLiveClient {
     pub(crate) fn new(
         settings: TikTokLiveSettings,
         http_client: TikTokLiveHttpClient,
-        event_observer: TikTokLiveEventObserver,
         websocket_client: TikTokLiveWebsocketClient,
         room_info: TikTokLiveInfo,
-        event_sender: mpsc::Sender<TikTokLiveEvent>,
     ) -> Self {
         TikTokLiveClient {
             settings,
             http_client,
-            event_observer,
-            websocket_client: Arc::new(websocket_client),
+            websocket_client,
             room_info,
-            event_sender,
         }
     }
 
@@ -82,12 +70,7 @@ impl TikTokLiveClient {
             })
             .await?;
 
-        let ws = TikTokLiveWebsocketClient {
-            message_mapper: TikTokLiveMessageMapper {},
-            running: Arc::new(AtomicBool::new(false)),
-            event_sender: self.event_sender.clone(),
-        };
-        ws.start(response).await?;
+        self.websocket_client.start(response).await?;
         self.set_connection_state(CONNECTED);
         Ok(())
     }
