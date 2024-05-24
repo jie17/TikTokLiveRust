@@ -51,6 +51,7 @@ impl TikTokLiveWebsocketClient {
             .header("Sec-Websocket-Key", "asd")
             .header("Cookie", response.web_socket_cookies)
             .header("Sec-Websocket-Version", "13")
+            .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36")
             .body(())?;
 
         let (socket, _) = connect_async(request).await?;
