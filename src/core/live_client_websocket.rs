@@ -107,7 +107,7 @@ impl TikTokLiveWebsocketClient {
                 let result_message = optional_message.unwrap();
                 if result_message.is_err() {
                     warn!("Unable to read message, {}", result_message.err().unwrap());
-                    continue;
+                    break;
                 }
                 let message = result_message.unwrap();
 
